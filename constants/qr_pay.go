@@ -8,7 +8,10 @@ const (
 	QRProviderVNPAY  QRProvider = "VNPAY"
 )
 
-// QRProviderGUID maps each provider to its AID (Application Identifier)
+func (q QRProvider) String() string {
+	return string(q)
+}
+
 type QRProviderGUID string
 
 const (
@@ -20,45 +23,57 @@ const (
 type FieldID string
 
 const (
-	FieldVersion         FieldID = "00"
-	FieldInitMethod      FieldID = "01"
-	FieldVNPAYQR         FieldID = "26"
-	FieldVIETQR          FieldID = "38"
-	FieldCategory        FieldID = "52"
-	FieldCurrency        FieldID = "53"
-	FieldAmount          FieldID = "54"
-	FieldTipAndFeeType   FieldID = "55"
-	FieldTipAndFeeAmount FieldID = "56"
-	FieldTipAndFeePct    FieldID = "57"
-	FieldNation          FieldID = "58"
-	FieldMerchantName    FieldID = "59"
-	FieldCity            FieldID = "60"
-	FieldZipCode         FieldID = "61"
-	FieldAdditionalData  FieldID = "62"
-	FieldCRC             FieldID = "63"
+	FieldIDVersion          FieldID = "00"
+	FieldIDInitMethod       FieldID = "01"
+	FieldIDVNPAYQR          FieldID = "26"
+	FieldIDVIETQR           FieldID = "38"
+	FieldIDCategory         FieldID = "52"
+	FieldIDCurrency         FieldID = "53"
+	FieldIDAmount           FieldID = "54"
+	FieldIDTipAndFeeType    FieldID = "55"
+	FieldIDTipAndFeeAmount  FieldID = "56"
+	FieldIDTipAndFeePercent FieldID = "57"
+	FieldIDNation           FieldID = "58"
+	FieldIDMerchantName     FieldID = "59"
+	FieldIDCity             FieldID = "60"
+	FieldIDZipCode          FieldID = "61"
+	FieldIDAdditionalData   FieldID = "62"
+	FieldIDCRC              FieldID = "63"
 )
 
-// EVMCoFieldIDs: 65-79
+func (f FieldID) String() string {
+	return string(f)
+}
+
 var EVMCoFieldIDs = []string{
 	"65", "66", "67", "68", "69", "70", "71", "72", "73", "74", "75", "76", "77", "78", "79",
 }
 
-// UnreservedFieldIDs: 80-99
+func GetEVMCoFieldIDs() []string {
+	return EVMCoFieldIDs
+}
+
 var UnreservedFieldIDs = []string{
 	"80", "81", "82", "83", "84", "85", "86", "87", "88", "89",
 	"90", "91", "92", "93", "94", "95", "96", "97", "98", "99",
 }
 
-// ProviderFieldID defines sub-fields under provider field (like 26 or 38)
+func GetUnreservedFieldIDs() []string {
+	return UnreservedFieldIDs
+}
+
 type ProviderFieldID string
 
 const (
-	ProviderFieldGUID    ProviderFieldID = "00"
-	ProviderFieldData    ProviderFieldID = "01"
-	ProviderFieldService ProviderFieldID = "02"
+	ProviderFieldIDGUID    ProviderFieldID = "00"
+	ProviderFieldIDData    ProviderFieldID = "01"
+	ProviderFieldIDService ProviderFieldID = "02"
 )
 
-// VietQRService defines types of VietQR services
+func (p ProviderFieldID) String() string {
+	return string(p)
+}
+
 type VietQRService string
 
 const (
@@ -70,51 +85,59 @@ const (
 type VietQRConsumerFieldID string
 
 const (
-	VietQRBankBin    VietQRConsumerFieldID = "00"
-	VietQRBankNumber VietQRConsumerFieldID = "01"
+	VietQRConsumerFieldIDBankBin    VietQRConsumerFieldID = "00"
+	VietQRConsumerFieldIDBankNumber VietQRConsumerFieldID = "01"
 )
+
+func (v VietQRConsumerFieldID) String() string {
+	return string(v)
+}
 
 // AdditionalDataID maps to optional data fields (field 62)
 type AdditionalDataID string
 
 const (
-	AdditionalBillNumber           AdditionalDataID = "01" // sổ hóa đơn
-	AdditionalMobileNumber         AdditionalDataID = "02" // số điện thoại
-	AdditionalStoreLabel           AdditionalDataID = "03" // mã cửa hàng
-	AdditionalLoyaltyNumber        AdditionalDataID = "04" // mã khách hàng thân thiết
-	AdditionalReferenceLabel       AdditionalDataID = "05" // mã tham chiếu
-	AdditionalCustomerLabel        AdditionalDataID = "06" // mã khách hàng
-	AdditionalTerminalLabel        AdditionalDataID = "07" // mã số điểm bán
-	AdditionalPurposeOfTransaction AdditionalDataID = "08" // mục đích giao dịch
-	AdditionalDataRequest          AdditionalDataID = "09" // yêu cầ uduwx liệu khách hàng bổ sung
+	AdditionalDataIDBillNumber                    AdditionalDataID = "01" // sổ hóa đơn
+	AdditionalDataIDMobileNumber                  AdditionalDataID = "02" // số điện thoại
+	AdditionalDataIDStoreLabel                    AdditionalDataID = "03" // mã cửa hàng
+	AdditionalDataIDLoyaltyNumber                 AdditionalDataID = "04" // mã khách hàng thân thiết
+	AdditionalDataIDReferenceLabel                AdditionalDataID = "05" // mã tham chiếu
+	AdditionalDataIDCustomerLabel                 AdditionalDataID = "06" // mã khách hàng
+	AdditionalDataIDTerminalLabel                 AdditionalDataID = "07" // mã số điểm bán
+	AdditionalDataIDPurposeOfTransaction          AdditionalDataID = "08" // mục đích giao dịch
+	AdditionalDataIDAdditionalConsumerDataRequest AdditionalDataID = "09" // yêu cầ uduwx liệu khách hàng bổ sung
 )
 
-type Provide struct {
-	fieldId *string
-	name    *QRProvider
-	guid    *string
-	service *string
-	data    *string
+func (a AdditionalDataID) String() string {
+	return string(a)
+}
+
+type Provider struct {
+	FieldId string
+	Name    QRProvider
+	GUID    string
+	Service string
+	Data    string
 }
 
 type AdditionalData struct {
-	billNumber    *string
-	mobileNumber  *string
-	store         *string
-	loyaltyNumber *string
-	reference     *string
-	customerLabel *string
-	terminal      *string
-	purpose       *string
-	dataRequest   *string
+	BillNumber    string
+	MobileNumber  string
+	Store         string
+	LoyaltyNumber string
+	Reference     string
+	CustomerLabel string
+	Terminal      string
+	Purpose       string
+	DataRequest   string
 }
 
 type Consumer struct {
-	bankBin    *string
-	bankNumber *string
+	BankBin    string
+	BankNumber string
 }
 
 type Merchant struct {
-	id   *string
-	name *string
+	Id   string
+	Name string
 }

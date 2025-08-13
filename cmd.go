@@ -1,1 +1,1 @@
-package viet_qr_pay
+package main
