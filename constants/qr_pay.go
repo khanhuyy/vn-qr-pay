@@ -15,9 +15,13 @@ func (q QRProvider) String() string {
 type QRProviderGUID string
 
 const (
-	GUIDVNPAY  QRProviderGUID = "A000000775"
-	GUIDVIETQR QRProviderGUID = "A000000727"
+	QRProviderGUIDVNPAY  QRProviderGUID = "A000000775"
+	QRProviderGUIDVIETQR QRProviderGUID = "A000000727"
 )
+
+func (q QRProviderGUID) String() string {
+	return string(q)
+}
 
 // FieldID defines standard EMVCo field IDs
 type FieldID string
@@ -77,8 +81,8 @@ func (p ProviderFieldID) String() string {
 type VietQRService string
 
 const (
-	VietQRByAccount VietQRService = "QRIBFTTA"
-	VietQRByCard    VietQRService = "QRIBFTTC"
+	VietQRServiceByAccount VietQRService = "QRIBFTTA"
+	VietQRServiceByCard    VietQRService = "QRIBFTTC"
 )
 
 // VietQRConsumerFieldID defines the sub-fields in VietQR data

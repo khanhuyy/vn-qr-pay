@@ -2,17 +2,16 @@ package serve
 
 import (
 	"fmt"
-	"qrpay/constants"
 	"sort"
 	"strconv"
 	"strings"
+
+	"qrpay/constants"
 )
 
 type QRPay interface {
 	Parse(content string)
-	Build()
-	InitVietQR()
-	InitVNPayQR()
+	Build() string
 	SetEVMCoField(id, value string)
 	SetUnreservedField(id, value string)
 	GenCRCCode(content string) string
@@ -21,9 +20,9 @@ type QRPay interface {
 	parseVietQRConsumer(content string)
 	parseAdditionalData(content string)
 	verifyCRC(content string) bool
-	sliceContent(content string) (string, int64, string, string)
+	sliceContent(content string) (string, int, string, string)
 	invalid()
-	genFieldData(id *string, value *string) string
+	genFieldData(id string, value string) string
 }
 
 type qrPay struct {
@@ -49,7 +48,12 @@ type qrPay struct {
 	Unreserved map[string]string
 }
 
-func NewQRPay(content string) *QRPay {
+func (qr *qrPay) InitVNPayQR() {
+	//TODO implement me
+	panic("implement me")
+}
+
+func NewQRPay(content string) *qrPay {
 	qr := &qrPay{
 		IsValid:        true,
 		Provider:       constants.Provider{},
@@ -212,7 +216,8 @@ func (qr *qrPay) parseRootContent(content string) {
 			qr.Unreserved[id] = value
 		}
 	}
-	if len(nextValue) > 4 {
+	// cause of tlv always need 2 chars for tag and 2 chars for length
+	if len(nextValue) >= 4 {
 		qr.parseRootContent(nextValue)
 	}
 }
@@ -302,6 +307,7 @@ func (qr *qrPay) GenCRCCode(content string) string {
 	return fmt.Sprintf("%04X", crc)
 }
 
+// sliceContent check tlv - tag length value
 func (qr *qrPay) sliceContent(content string) (id string, length int, value, nextValue string) {
 	id = content[0:2]
 	lengthString := content[2:4]
