@@ -8,8 +8,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/khanhuyy/emvqr/constants"
-	"github.com/khanhuyy/emvqr/serve"
+	"github.com/khanhuyy/emvgo/constants"
+	"github.com/khanhuyy/emvgo/serve"
 )
 
 const usage = `qrpay — Vietnam QR Pay (VietQR / VNPAYQR) command-line tool

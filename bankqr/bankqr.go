@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/khanhuyy/emvqr/constants"
-	"github.com/khanhuyy/emvqr/serve"
+	"github.com/khanhuyy/emvgo/constants"
+	"github.com/khanhuyy/emvgo/serve"
 )
 
 // Service is the VietQR transfer service code (field 38.02).
@@ -19,21 +19,28 @@ const (
 )
 
 // Options for building a VietQR.
+//
+// Required fields are plain values; optional fields are pointers so that
+// "unset" and "zero value" are distinguishable. Use utils.StrPtr / Int64Ptr /
+// the package's WithXxx helpers to construct pointer values inline.
 type Options struct {
-	BIN           string // bank BIN, e.g. 970436
+	// Required.
+	BIN           constants.BankBIN // e.g. constants.BIN_VIETCOMBANK
 	AccountNumber string
-	Amount        int64 // 0 = static QR
-	Purpose       string
-	Service       Service // default QRIBFTTA
 
-	// Field 62 sub-fields.
-	BillNumber    string
-	MobileNumber  string
-	Store         string
-	LoyaltyNumber string
-	Reference     string
-	CustomerLabel string
-	Terminal      string
+	// Optional.
+	Amount  *int64   // VND; nil = static QR
+	Purpose *string  // remark
+	Service *Service // default ServiceTransferToAccount
+
+	// Field 62 sub-fields — nil omits.
+	BillNumber    *string
+	MobileNumber  *string
+	Store         *string
+	LoyaltyNumber *string
+	Reference     *string
+	CustomerLabel *string
+	Terminal      *string
 }
 
 // QR is a decoded/encoded Vietnam QR payment.
@@ -41,7 +48,7 @@ type QR struct {
 	Provider string
 	Dynamic  bool
 
-	BIN           string
+	BIN           constants.BankBIN
 	AccountNumber string
 	Service       Service
 
@@ -64,115 +71,108 @@ type QR struct {
 	inner *serve.Pay
 }
 
-// New builds a VietQR from opts.
+// New builds a VietQR from opts. BIN and AccountNumber are required.
 func New(opts Options) *QR {
-	service := opts.Service
-	if service == "" {
-		service = ServiceTransferToAccount
+	service := ServiceTransferToAccount
+	if opts.Service != nil {
+		service = *opts.Service
 	}
 
+	amountVal := derefInt64(opts.Amount)
 	amountStr := ""
-	if opts.Amount > 0 {
-		amountStr = strconv.FormatInt(opts.Amount, 10)
+	if amountVal > 0 {
+		amountStr = strconv.FormatInt(amountVal, 10)
 	}
+
+	purpose := derefStr(opts.Purpose)
 
 	inner := serve.InitVietQR(serve.InitVietQROptions{
-		BankBin:    opts.BIN,
+		BankBin:    opts.BIN.String(),
 		BankNumber: opts.AccountNumber,
 		Amount:     amountStr,
-		Purpose:    opts.Purpose,
+		Purpose:    purpose,
 		Service:    string(service),
 	})
 
-	inner.AdditionalData.BillNumber = opts.BillNumber
-	inner.AdditionalData.MobileNumber = opts.MobileNumber
-	inner.AdditionalData.Store = opts.Store
-	inner.AdditionalData.LoyaltyNumber = opts.LoyaltyNumber
-	inner.AdditionalData.Reference = opts.Reference
-	inner.AdditionalData.CustomerLabel = opts.CustomerLabel
-	inner.AdditionalData.Terminal = opts.Terminal
+	inner.AdditionalData.BillNumber = derefStr(opts.BillNumber)
+	inner.AdditionalData.MobileNumber = derefStr(opts.MobileNumber)
+	inner.AdditionalData.Store = derefStr(opts.Store)
+	inner.AdditionalData.LoyaltyNumber = derefStr(opts.LoyaltyNumber)
+	inner.AdditionalData.Reference = derefStr(opts.Reference)
+	inner.AdditionalData.CustomerLabel = derefStr(opts.CustomerLabel)
+	inner.AdditionalData.Terminal = derefStr(opts.Terminal)
 
 	return &QR{
 		Provider:      string(constants.QRProviderVIETQR),
-		Dynamic:       opts.Amount > 0,
+		Dynamic:       amountVal > 0,
 		BIN:           opts.BIN,
 		AccountNumber: opts.AccountNumber,
 		Service:       service,
-		Amount:        opts.Amount,
-		Purpose:       opts.Purpose,
-		BillNumber:    opts.BillNumber,
-		MobileNumber:  opts.MobileNumber,
-		Store:         opts.Store,
-		LoyaltyNumber: opts.LoyaltyNumber,
-		Reference:     opts.Reference,
-		CustomerLabel: opts.CustomerLabel,
-		Terminal:      opts.Terminal,
+		Amount:        amountVal,
+		Purpose:       purpose,
+		BillNumber:    derefStr(opts.BillNumber),
+		MobileNumber:  derefStr(opts.MobileNumber),
+		Store:         derefStr(opts.Store),
+		LoyaltyNumber: derefStr(opts.LoyaltyNumber),
+		Reference:     derefStr(opts.Reference),
+		CustomerLabel: derefStr(opts.CustomerLabel),
+		Terminal:      derefStr(opts.Terminal),
 		inner:         inner,
 	}
 }
 
-// VNPayOptions for building a VNPAY merchant QR.
+// VNPayOptions for building a VNPAY merchant QR. MerchantID required.
 type VNPayOptions struct {
-	MerchantID   string
-	MerchantName string
-	Store        string
-	Terminal     string
+	// Required.
+	MerchantID string
 
-	Amount        int64
-	Purpose       string
-	BillNumber    string
-	MobileNumber  string
-	LoyaltyNumber string
-	Reference     string
-	CustomerLabel string
+	// Optional.
+	MerchantName  *string
+	Store         *string
+	Terminal      *string
+	Amount        *int64
+	Purpose       *string
+	BillNumber    *string
+	MobileNumber  *string
+	LoyaltyNumber *string
+	Reference     *string
+	CustomerLabel *string
 }
 
 // NewVNPay builds a VNPAY merchant QR.
 func NewVNPay(opts VNPayOptions) *QR {
 	req := serve.VNPaymentRequest{
 		MerchantID:   opts.MerchantID,
-		MerchantName: opts.MerchantName,
-		Store:        opts.Store,
-		Terminal:     opts.Terminal,
+		MerchantName: derefStr(opts.MerchantName),
+		Store:        derefStr(opts.Store),
+		Terminal:     derefStr(opts.Terminal),
 	}
-	if opts.Amount > 0 {
-		s := strconv.FormatInt(opts.Amount, 10)
+	if opts.Amount != nil && *opts.Amount > 0 {
+		s := strconv.FormatInt(*opts.Amount, 10)
 		req.Amount = &s
 	}
-	if opts.Purpose != "" {
-		req.Purpose = &opts.Purpose
-	}
-	if opts.BillNumber != "" {
-		req.BillNumber = &opts.BillNumber
-	}
-	if opts.MobileNumber != "" {
-		req.MobileNumber = &opts.MobileNumber
-	}
-	if opts.LoyaltyNumber != "" {
-		req.LoyaltyNumber = &opts.LoyaltyNumber
-	}
-	if opts.Reference != "" {
-		req.Reference = &opts.Reference
-	}
-	if opts.CustomerLabel != "" {
-		req.CustomerLabel = &opts.CustomerLabel
-	}
+	req.Purpose = opts.Purpose
+	req.BillNumber = opts.BillNumber
+	req.MobileNumber = opts.MobileNumber
+	req.LoyaltyNumber = opts.LoyaltyNumber
+	req.Reference = opts.Reference
+	req.CustomerLabel = opts.CustomerLabel
 
 	inner := serve.InitVNPayQR(req)
 	return &QR{
 		Provider:      string(constants.QRProviderVNPAY),
-		Dynamic:       opts.Amount > 0,
+		Dynamic:       opts.Amount != nil && *opts.Amount > 0,
 		MerchantID:    opts.MerchantID,
-		MerchantName:  opts.MerchantName,
-		Amount:        opts.Amount,
-		Purpose:       opts.Purpose,
-		BillNumber:    opts.BillNumber,
-		MobileNumber:  opts.MobileNumber,
-		Store:         opts.Store,
-		Terminal:      opts.Terminal,
-		Reference:     opts.Reference,
-		LoyaltyNumber: opts.LoyaltyNumber,
-		CustomerLabel: opts.CustomerLabel,
+		MerchantName:  derefStr(opts.MerchantName),
+		Amount:        derefInt64(opts.Amount),
+		Purpose:       derefStr(opts.Purpose),
+		BillNumber:    derefStr(opts.BillNumber),
+		MobileNumber:  derefStr(opts.MobileNumber),
+		Store:         derefStr(opts.Store),
+		Terminal:      derefStr(opts.Terminal),
+		Reference:     derefStr(opts.Reference),
+		LoyaltyNumber: derefStr(opts.LoyaltyNumber),
+		CustomerLabel: derefStr(opts.CustomerLabel),
 		inner:         inner,
 	}
 }
@@ -190,7 +190,7 @@ func Parse(content string) (*QR, error) {
 	q := &QR{
 		Provider:         string(inner.Provider.Name),
 		Dynamic:          inner.InitMethod == "12",
-		BIN:              inner.Consumer.BankBin,
+		BIN:              constants.BankBIN(inner.Consumer.BankBin),
 		AccountNumber:    inner.Consumer.BankNumber,
 		Service:          Service(inner.Provider.Service),
 		MerchantID:       inner.Merchant.Id,
@@ -218,7 +218,7 @@ func Parse(content string) (*QR, error) {
 func (q *QR) String() string {
 	if q.inner == nil {
 		q.inner = serve.InitVietQR(serve.InitVietQROptions{
-			BankBin:    q.BIN,
+			BankBin:    q.BIN.String(),
 			BankNumber: q.AccountNumber,
 			Service:    string(q.Service),
 		})
@@ -229,7 +229,7 @@ func (q *QR) String() string {
 		q.inner.Merchant.Id = q.MerchantID
 		q.inner.Merchant.Name = q.MerchantName
 	default:
-		q.inner.Consumer.BankBin = q.BIN
+		q.inner.Consumer.BankBin = q.BIN.String()
 		q.inner.Consumer.BankNumber = q.AccountNumber
 		if q.Service != "" {
 			q.inner.Provider.Service = string(q.Service)
@@ -257,10 +257,11 @@ func (q *QR) String() string {
 	return q.inner.Build()
 }
 
-// Bank looks up a bank by 6-digit Napas BIN.
-func Bank(bin string) (constants.Bank, bool) {
+// Bank looks up a bank by Napas BIN.
+func Bank(bin constants.BankBIN) (constants.Bank, bool) {
+	s := bin.String()
 	for _, b := range constants.BanksMap {
-		if b.BIN == bin {
+		if b.BIN == s {
 			return b, true
 		}
 	}
@@ -274,4 +275,20 @@ func MustNew(opts Options) *QR {
 		panic(fmt.Sprintf("bankqr.MustNew: %v", err))
 	}
 	return qr
+}
+
+// Tiny pointer-deref helpers — internal only.
+
+func derefStr(p *string) string {
+	if p == nil {
+		return ""
+	}
+	return *p
+}
+
+func derefInt64(p *int64) int64 {
+	if p == nil {
+		return 0
+	}
+	return *p
 }

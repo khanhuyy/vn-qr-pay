@@ -2,6 +2,8 @@ package constants
 
 type BankCode string
 
+func (c BankCode) String() string { return string(c) }
+
 const (
 	BankCode_ABBANK                  BankCode = "ABBANK"
 	BankCode_ACB                     BankCode = "ACB"

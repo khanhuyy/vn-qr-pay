@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/khanhuyy/emvqr/constants"
+	"github.com/khanhuyy/emvgo/constants"
 )
 
 type TLV struct {

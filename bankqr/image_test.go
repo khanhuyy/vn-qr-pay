@@ -7,7 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/khanhuyy/emvqr/bankqr"
+	"github.com/khanhuyy/emvgo/bankqr"
+	"github.com/khanhuyy/emvgo/constants"
+	"github.com/khanhuyy/emvgo/utils"
 )
 
 // PNG magic bytes.
@@ -15,10 +17,10 @@ var pngMagic = []byte{0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A}
 
 func vcbQR() *bankqr.QR {
 	return bankqr.New(bankqr.Options{
-		BIN:           "970436",
+		BIN:           constants.BIN_VIETCOMBANK,
 		AccountNumber: "1234567890",
-		Amount:        50_000,
-		Purpose:       "Cam on",
+		Amount:        utils.Int64Ptr(50_000),
+		Purpose:       utils.StrPtr("Cam on"),
 	})
 }
 

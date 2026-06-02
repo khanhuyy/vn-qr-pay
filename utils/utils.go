@@ -8,6 +8,9 @@ func StrPtr(s string) *string { return &s }
 // IntPtr returns &i.
 func IntPtr(i int) *int { return &i }
 
+// Int64Ptr returns &i.
+func Int64Ptr(i int64) *int64 { return &i }
+
 // BoolPtr returns &b.
 func BoolPtr(b bool) *bool { return &b }
 

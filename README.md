@@ -7,31 +7,35 @@ Encodes and decodes per the EMVCo spec; reference fixtures verified against
 ## Install
 
 ```bash
-go get github.com/khanhuyy/emvqr
+go get github.com/khanhuyy/emvgo
 ```
 
 Minimum Go version: **1.13**.
 
-## Library API — `github.com/khanhuyy/emvqr/bankqr`
+## Library API — `github.com/khanhuyy/emvgo/bankqr`
 
 The headline package:
 
 ```go
-import "github.com/khanhuyy/emvqr/bankqr"
+import (
+    "github.com/khanhuyy/emvgo/bankqr"
+    "github.com/khanhuyy/emvgo/constants"
+    "github.com/khanhuyy/emvgo/utils"
+)
 
 // Static QR (no amount)
 qr := bankqr.New(bankqr.Options{
-    BIN:           "970436",        // Vietcombank
+    BIN:           constants.BIN_VIETCOMBANK,
     AccountNumber: "1234567890",
 })
 fmt.Println(qr.String())
 
-// Dynamic QR (with amount + remark)
+// Dynamic QR (with amount + remark) — optional fields are pointers
 qr = bankqr.New(bankqr.Options{
-    BIN:           "970416",        // ACB
+    BIN:           constants.BIN_ACB,
     AccountNumber: "257678859",
-    Amount:        10_000,
-    Purpose:       "Chuyen tien",
+    Amount:        utils.Int64Ptr(10_000),
+    Purpose:       utils.StrPtr("Chuyen tien"),
 })
 fmt.Println(qr.String())
 
@@ -48,18 +52,37 @@ updated := parsed.String()
 // VNPAY merchant QR
 vn := bankqr.NewVNPay(bankqr.VNPayOptions{
     MerchantID:   "0102154778",
-    MerchantName: "TUGIACOMPANY",
-    Store:        "TU GIA COMPUTER",
-    Terminal:     "TUGIACO1",
+    MerchantName: utils.StrPtr("TUGIACOMPANY"),
+    Store:        utils.StrPtr("TU GIA COMPUTER"),
+    Terminal:     utils.StrPtr("TUGIACO1"),
 })
 
-// Look up bank by BIN
-b, ok := bankqr.Bank("970436") // b.ShortName == "Vietcombank"
+// Look up bank by BIN enum
+b, ok := bankqr.Bank(constants.BIN_VIETCOMBANK) // b.ShortName == "Vietcombank"
 ```
 
-`bankqr.Options` carries every field 62 sub-field (BillNumber, MobileNumber,
-Store, Reference, CustomerLabel, LoyaltyNumber, Terminal) when needed — all
-optional; leave blank to omit from the QR.
+### Options layout
+
+`bankqr.Options` follows a "required = value, optional = pointer" convention:
+
+| Field | Type | Required |
+|-------|------|----------|
+| `BIN` | `constants.BankBIN` | ✅ |
+| `AccountNumber` | `string` | ✅ |
+| `Amount` | `*int64` | optional (nil = static QR) |
+| `Purpose` | `*string` | optional |
+| `Service` | `*Service` | optional (default `ServiceTransferToAccount`) |
+| `BillNumber`, `MobileNumber`, `Store`, `LoyaltyNumber`, `Reference`, `CustomerLabel`, `Terminal` | `*string` | optional |
+
+Pointer helpers live in `github.com/khanhuyy/emvgo/utils`: `StrPtr`, `IntPtr`,
+`Int64Ptr`, `BoolPtr`.
+
+### Bank enums
+
+`constants/bank_bin.go` exposes ~50 well-known `BankBIN` constants
+(`BIN_VIETCOMBANK = "970436"`, `BIN_TECHCOMBANK = "970407"`, `BIN_MBBANK`,
+`BIN_ACB`, `BIN_BIDV`, `BIN_BVBANK`, …). `BankCode` (full names) and `BankKey`
+(URL slugs) both have `.String()` helpers.
 
 Service codes:
 
@@ -71,7 +94,10 @@ Service codes:
 ## QR image generation
 
 ```go
-qr := bankqr.New(bankqr.Options{BIN: "970436", AccountNumber: "1234567890"})
+qr := bankqr.New(bankqr.Options{
+    BIN:           constants.BIN_VIETCOMBANK,
+    AccountNumber: "1234567890",
+})
 
 // Raw PNG bytes
 png, err := qr.PNG(256) // 256x256 px
@@ -104,7 +130,7 @@ qrpay banks  --filter techcom
 
 Append `--json` to `build` / `parse` / `banks` for pipeline-friendly output.
 
-## Lower-level package — `github.com/khanhuyy/emvqr/serve`
+## Lower-level package — `github.com/khanhuyy/emvgo/serve`
 
 `bankqr` wraps `serve.Pay`. Reach into `qrpay/serve` directly if you need raw
 EMVCo control (custom field 65-79, unreserved 80-99, tip & fee, multi-language).

@@ -2,6 +2,8 @@ package constants
 
 type BankKey string
 
+func (k BankKey) String() string { return string(k) }
+
 const (
 	BankKey_ABBANK                  BankKey = "abbank"
 	BankKey_ACB                     BankKey = "acb"

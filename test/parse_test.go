@@ -3,8 +3,8 @@ package test
 import (
 	"testing"
 
-	"github.com/khanhuyy/emvqr/constants"
-	"github.com/khanhuyy/emvqr/serve"
+	"github.com/khanhuyy/emvgo/constants"
+	"github.com/khanhuyy/emvgo/serve"
 )
 
 // Parse static VietQR.

@@ -1,6 +1,6 @@
 package serve
 
-import "github.com/khanhuyy/emvqr/constants"
+import "github.com/khanhuyy/emvgo/constants"
 
 type VNPaymentRequest struct {
 	MerchantID   string `json:"merchantId"`

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/khanhuyy/emvqr/serve"
+	"github.com/khanhuyy/emvgo/serve"
 )
 
 // CRC-16/CCITT-FALSE vectors (incl. real QR strings minus the 4-hex CRC).

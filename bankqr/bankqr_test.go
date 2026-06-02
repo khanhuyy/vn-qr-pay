@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/khanhuyy/emvqr/bankqr"
+	"github.com/khanhuyy/emvgo/bankqr"
+	"github.com/khanhuyy/emvgo/constants"
+	"github.com/khanhuyy/emvgo/utils"
 )
 
 // Reference fixtures.
@@ -17,7 +19,7 @@ const (
 
 func TestNew_StaticVietQR_MatchesReference(t *testing.T) {
 	qr := bankqr.New(bankqr.Options{
-		BIN:           "970416",
+		BIN:           constants.BIN_ACB,
 		AccountNumber: "257678859",
 	})
 	if got := qr.String(); got != vietQRStaticACB {
@@ -30,10 +32,10 @@ func TestNew_StaticVietQR_MatchesReference(t *testing.T) {
 
 func TestNew_DynamicVietQR_MatchesReference(t *testing.T) {
 	qr := bankqr.New(bankqr.Options{
-		BIN:           "970416",
+		BIN:           constants.BIN_ACB,
 		AccountNumber: "257678859",
-		Amount:        10_000,
-		Purpose:       "Chuyen tien",
+		Amount:        utils.Int64Ptr(10_000),
+		Purpose:       utils.StrPtr("Chuyen tien"),
 	})
 	if got := qr.String(); got != vietQRDynamicACB {
 		t.Fatalf("dynamic VietQR mismatch\nwant: %s\n got: %s", vietQRDynamicACB, got)
@@ -44,21 +46,40 @@ func TestNew_DynamicVietQR_MatchesReference(t *testing.T) {
 }
 
 func TestNew_DefaultServiceIsTransferToAccount(t *testing.T) {
-	qr := bankqr.New(bankqr.Options{BIN: "970436", AccountNumber: "1"})
+	qr := bankqr.New(bankqr.Options{BIN: constants.BIN_VIETCOMBANK, AccountNumber: "1"})
 	if qr.Service != bankqr.ServiceTransferToAccount {
 		t.Errorf("default service: want QRIBFTTA, got %q", qr.Service)
 	}
 }
 
 func TestNew_TransferToCardServiceFlows(t *testing.T) {
+	svc := bankqr.ServiceTransferToCard
 	qr := bankqr.New(bankqr.Options{
-		BIN:           "970422",
+		BIN:           constants.BIN_MBBANK,
 		AccountNumber: "9704229876543210",
-		Service:       bankqr.ServiceTransferToCard,
+		Service:       &svc,
 	})
 	out := qr.String()
 	if want := "0208QRIBFTTC"; !contains(out, want) {
 		t.Errorf("missing %q in %s", want, out)
+	}
+}
+
+func TestNew_BinEnumProducesCorrectBytes(t *testing.T) {
+	// Verify the constant resolves to the same 6 digits we documented.
+	if constants.BIN_VIETCOMBANK.String() != "970436" {
+		t.Errorf("BIN_VIETCOMBANK: want 970436, got %q", constants.BIN_VIETCOMBANK.String())
+	}
+	if constants.BIN_TECHCOMBANK.String() != "970407" {
+		t.Errorf("BIN_TECHCOMBANK: want 970407, got %q", constants.BIN_TECHCOMBANK.String())
+	}
+
+	out := bankqr.New(bankqr.Options{
+		BIN:           constants.BIN_VIETCOMBANK,
+		AccountNumber: "1234567890",
+	}).String()
+	if !contains(out, "0006970436") {
+		t.Errorf("BIN 970436 not present in output: %s", out)
 	}
 }
 
@@ -67,8 +88,8 @@ func TestParse_VietQRDynamic(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if qr.BIN != "970416" {
-		t.Errorf("BIN: want 970416, got %q", qr.BIN)
+	if qr.BIN != constants.BIN_ACB {
+		t.Errorf("BIN: want BIN_ACB, got %q", qr.BIN)
 	}
 	if qr.AccountNumber != "257678859" {
 		t.Errorf("AccountNumber: got %q", qr.AccountNumber)
@@ -123,23 +144,32 @@ func TestRoundTrip_MoMoPreservesUnreserved(t *testing.T) {
 }
 
 func TestBank_FoundAndMissing(t *testing.T) {
-	b, ok := bankqr.Bank("970436")
+	b, ok := bankqr.Bank(constants.BIN_VIETCOMBANK)
 	if !ok {
-		t.Fatal("expected to find Vietcombank by BIN 970436")
+		t.Fatal("expected to find Vietcombank by BIN")
 	}
 	if b.ShortName == "" {
 		t.Error("ShortName should be populated")
 	}
 
-	if _, ok := bankqr.Bank("000000"); ok {
+	if _, ok := bankqr.Bank(constants.BankBIN("000000")); ok {
 		t.Error("expected miss for fake BIN")
+	}
+}
+
+func TestBankCode_StringMethod(t *testing.T) {
+	if constants.BankCode_VIETCOMBANK.String() != "VIETCOMBANK" {
+		t.Errorf("BankCode.String() mismatch: %q", constants.BankCode_VIETCOMBANK.String())
+	}
+	if constants.BankKey_VIETCOMBANK.String() != "vietcombank" {
+		t.Errorf("BankKey.String() mismatch: %q", constants.BankKey_VIETCOMBANK.String())
 	}
 }
 
 // Godoc examples.
 func ExampleNew_static() {
 	qr := bankqr.New(bankqr.Options{
-		BIN:           "970416", // ACB
+		BIN:           constants.BIN_ACB,
 		AccountNumber: "257678859",
 	})
 	fmt.Println(qr.String())
@@ -148,10 +178,10 @@ func ExampleNew_static() {
 
 func ExampleNew_dynamic() {
 	qr := bankqr.New(bankqr.Options{
-		BIN:           "970416",
+		BIN:           constants.BIN_ACB,
 		AccountNumber: "257678859",
-		Amount:        10_000,
-		Purpose:       "Chuyen tien",
+		Amount:        utils.Int64Ptr(10_000),
+		Purpose:       utils.StrPtr("Chuyen tien"),
 	})
 	fmt.Println(qr.String())
 	// Output: 00020101021238530010A0000007270123000697041601092576788590208QRIBFTTA53037045405100005802VN62150811Chuyen tien630453E6

@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/khanhuyy/emvqr/constants"
-	"github.com/khanhuyy/emvqr/serve"
+	"github.com/khanhuyy/emvgo/constants"
+	"github.com/khanhuyy/emvgo/serve"
 )
 
 // Empty constructor must produce a valid, buildable instance.

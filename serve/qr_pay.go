@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/khanhuyy/emvqr/constants"
+	"github.com/khanhuyy/emvgo/constants"
 )
 
 type QRPay interface {

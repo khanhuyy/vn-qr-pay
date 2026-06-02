@@ -1,4 +1,4 @@
-module github.com/khanhuyy/emvqr
+module github.com/khanhuyy/emvgo
 
 go 1.13
 

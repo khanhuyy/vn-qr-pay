@@ -1,6 +1,6 @@
 package constants
 
-import "github.com/khanhuyy/emvqr/utils"
+import "github.com/khanhuyy/emvgo/utils"
 
 type VietQRStatus int
 
