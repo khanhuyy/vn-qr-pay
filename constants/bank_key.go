@@ -16,7 +16,7 @@ const (
 	BankKey_CIMB                    BankKey = "cimb"
 	BankKey_COOP_BANK               BankKey = "coopbank"
 	BankKey_DBS_BANK                BankKey = "dbsbank"
-	BankKey_DONG_A_BANK             BankKey = "dongabank" /** @deprecated - Chuyển giao cho HDBank, đổi tên thành Vikki Digital Bank */
+	BankKey_DONG_A_BANK             BankKey = "dongabank" /** @deprecated transferred to HDBank, renamed to Vikki Digital Bank */
 	BankKey_EXIMBANK                BankKey = "eximbank"
 	BankKey_GPBANK                  BankKey = "gpbank"
 	BankKey_HDBANK                  BankKey = "hdbank"
@@ -29,7 +29,7 @@ const (
 	BankKey_KIENLONG_BANK           BankKey = "kienlongbank"
 	BankKey_KOOKMIN_BANK_HCM        BankKey = "kookminhcm"
 	BankKey_KOOKMIN_BANK_HN         BankKey = "kookminhn"
-	BankKey_LIENVIETPOST_BANK       BankKey = "lienvietpostbank" /** @deprecated Đổi tên thành Lộc Phát Việt Nam (LPBANK) */
+	BankKey_LIENVIETPOST_BANK       BankKey = "lienvietpostbank" /** @deprecated renamed to Loc Phat Vietnam (LPBANK) */
 	BankKey_LPBANK                  BankKey = "lpbank"
 	BankKey_LIOBANK                 BankKey = "liobank"
 	BankKey_MBBANK                  BankKey = "mbbank"
@@ -39,7 +39,7 @@ const (
 	BankKey_NCB                     BankKey = "ncb"
 	BankKey_NONGHYUP_BANK_HN        BankKey = "nonghyup"
 	BankKey_OCB                     BankKey = "ocb"
-	BankKey_OCEANBANK               BankKey = "oceanbank" /** @deprecated Chuyển giao cho MBBank đổi tên thành MBV */
+	BankKey_OCEANBANK               BankKey = "oceanbank" /** @deprecated transferred to MBBank, renamed to MBV */
 	BankKey_PGBANK                  BankKey = "pgbank"
 	BankKey_PUBLIC_BANK             BankKey = "publicbank"
 	BankKey_PVCOM_BANK              BankKey = "pvcombank"

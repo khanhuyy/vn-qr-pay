@@ -3,6 +3,8 @@ package serve
 import (
 	"fmt"
 	"strconv"
+
+	"github.com/khanhuyy/emvqr/constants"
 )
 
 type TLV struct {
@@ -30,6 +32,8 @@ type instance struct {
 	AdditionalData       string
 	CRC                  string
 	MerchantInfoLanguage string
+	MerchantFields       map[string]string // Fields 02-51 (Merchant Account)
+	Consumer             constants.Consumer
 	tlvs                 []*TLV
 }
 
@@ -75,7 +79,10 @@ func (qr *instance) ParseTLVs(content string) error {
 		qr.MerchantInfoLanguage = value
 	default:
 		if IsMerchantAccount(tag) {
-			fmt.Println("implement merchant account")
+			if qr.MerchantFields == nil {
+				qr.MerchantFields = make(map[string]string)
+			}
+			qr.MerchantFields[tag] = value
 		} else if IsRFU(tag) {
 			fmt.Println("implement RFU")
 		} else if IsUnreserved(tag) {
@@ -107,28 +114,53 @@ func NewMyQRPay() *instance {
 	return &instance{}
 }
 
+// addField appends a TLV. Empty values are skipped.
 func (qr *instance) addField(tag, value string) {
+	if value == "" {
+		return
+	}
 	qr.tlvs = append(qr.tlvs, &TLV{
-		Tag:    FieldPayloadFormat,
+		Tag:    tag,
 		Length: len(value),
 		Value:  value,
 	})
 }
 
+// Build produces a VietQR (field 38) from opts.
 func (qr *instance) Build(options BuildQROptions) string {
 	qr.tlvs = []*TLV{}
+
+	initMethod := defaultStr(qr.InitiationMethod, "11")
+	if options.Amount != "" {
+		initMethod = "12"
+	}
+
 	qr.addField(FieldPayloadFormat, defaultStr(qr.PayloadFormat, "01"))
-	qr.addField(FieldInitiationMethod, defaultStr(qr.InitiationMethod, "11"))
+	qr.addField(FieldInitiationMethod, initMethod)
+
+	// Field 38: 00=GUID, 01=bank info, 02=service code.
+	bankInfo := buildTLV("00", options.BankBin) + buildTLV("01", options.BankNumber)
+	providerContent := buildTLV("00", "A000000727") +
+		buildTLV("01", bankInfo) +
+		buildTLV("02", string(constants.VietQRServiceByAccount))
+	qr.tlvs = append(qr.tlvs, &TLV{Tag: "38", Length: len(providerContent), Value: providerContent})
+
 	qr.addField(FieldMCC, qr.MCC)
-	qr.addField(FieldCurrency, defaultStr(qr.Currency, defaultStr(qr.Currency, "704")))
-	qr.addField(FieldAmount, qr.Amount)
+	qr.addField(FieldCurrency, defaultStr(qr.Currency, "704"))
+	qr.addField(FieldAmount, options.Amount)
 	qr.addField(FieldTipIndicator, qr.TipIndicator)
 	qr.addField(FieldConvenienceFee, qr.ConvenienceFee)
 	qr.addField(FieldCountry, defaultStr(qr.Country, "VN"))
 	qr.addField(FieldMerchantName, qr.MerchantName)
 	qr.addField(FieldMerchantCity, qr.MerchantCity)
 	qr.addField(FieldPostalCode, qr.PostalCode)
-	qr.addField(FieldAdditionalData, qr.AdditionalData)
+
+	// Field 62.08 = purpose / remark.
+	if options.Remark != "" {
+		additional := buildTLV("08", options.Remark)
+		qr.tlvs = append(qr.tlvs, &TLV{Tag: FieldAdditionalData, Length: len(additional), Value: additional})
+	}
+
 	qr.addField(FieldMerchantInfoLanguage, qr.MerchantInfoLanguage)
 
 	var res string
@@ -136,14 +168,10 @@ func (qr *instance) Build(options BuildQROptions) string {
 		res += tlv.Concat()
 	}
 
-	provider := qr.addField("38", &TLV{
-		{"00", "A000000727"},
-		{"01", qr.Consumer.BankBin},
-		{"02", qr.Consumer.BankNumber},
-	})
-	crc := qr.buildCRC(res)
-
-	return res + crc
+	// CRC input includes the "6304" prefix.
+	withCRCPrefix := res + FieldCRC + "04"
+	crc := qr.buildCRC(withCRCPrefix)
+	return withCRCPrefix + crc
 }
 
 func (qr *instance) buildCRC(content string) string {
@@ -151,8 +179,6 @@ func (qr *instance) buildCRC(content string) string {
 	return fmt.Sprintf("%04X", crc)
 }
 
-func (qr *instance) buildMerchantProvider(content string) string {
-	qr.addField(, qr.MerchantName)
-	qr.addField("01", qr.MerchantName)
-	qr.addField("02", qr.MerchantName)
+func buildTLV(tag, value string) string {
+	return fmt.Sprintf("%s%02d%s", tag, len(value), value)
 }

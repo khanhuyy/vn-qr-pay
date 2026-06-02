@@ -1,6 +1,6 @@
 package serve
 
-import "qrpay/constants"
+import "github.com/khanhuyy/emvqr/constants"
 
 type VNPaymentRequest struct {
 	MerchantID   string `json:"merchantId"`
@@ -18,24 +18,49 @@ type VNPaymentRequest struct {
 	CustomerLabel *string `json:"customerLabel,omitempty"`
 }
 
-//func InitVNPayQR(options VNPaymentRequest) QRPay {
-//	var qr = NewQRPay("hello")
-//	qr.Merchant.id = options.MerchantID
-//	qr.merchant.name = options.MerchantName
-//	qr.provider.fieldId = constants.FieldIDVNPAYQR
-//	qr.provider.guid = QRProviderGUID.VNPAY
-//	qr.provider.name = QRProvider.VNPAY
-//	qr.amount = options.amount
-//	qr.additionalData.purpose = options.purpose
-//	qr.additionalData.billNumber = options.billNumber
-//	qr.additionalData.mobileNumber = options.mobileNumber
-//	qr.additionalData.store = options.store
-//	qr.additionalData.terminal = options.terminal
-//	qr.additionalData.loyaltyNumber = options.loyaltyNumber
-//	qr.additionalData.reference = options.reference
-//	qr.additionalData.customerLabel = options.customerLabel
-//	return qr
-//}
+// InitVNPayQR builds a VNPAY merchant QR (field 26).
+func InitVNPayQR(options VNPaymentRequest) *Pay {
+	qr := NewQRPay("")
+
+	qr.Provider.FieldId = constants.FieldIDVNPAYQR.String()
+	qr.Provider.GUID = constants.QRProviderGUIDVNPAY.String()
+	qr.Provider.Name = constants.QRProviderVNPAY
+
+	qr.Merchant.Id = options.MerchantID
+	qr.Merchant.Name = options.MerchantName
+
+	if options.Amount != nil {
+		qr.Amount = *options.Amount
+		qr.InitMethod = "12"
+	} else {
+		qr.InitMethod = "11"
+	}
+	if options.Purpose != nil {
+		qr.AdditionalData.Purpose = *options.Purpose
+	}
+	if options.BillNumber != nil {
+		qr.AdditionalData.BillNumber = *options.BillNumber
+	}
+	if options.MobileNumber != nil {
+		qr.AdditionalData.MobileNumber = *options.MobileNumber
+	}
+	if options.Store != "" {
+		qr.AdditionalData.Store = options.Store
+	}
+	if options.Terminal != "" {
+		qr.AdditionalData.Terminal = options.Terminal
+	}
+	if options.LoyaltyNumber != nil {
+		qr.AdditionalData.LoyaltyNumber = *options.LoyaltyNumber
+	}
+	if options.Reference != nil {
+		qr.AdditionalData.Reference = *options.Reference
+	}
+	if options.CustomerLabel != nil {
+		qr.AdditionalData.CustomerLabel = *options.CustomerLabel
+	}
+	return qr
+}
 
 type InitVietQROptions struct {
 	BankBin    string
@@ -45,7 +70,7 @@ type InitVietQROptions struct {
 	Service    string
 }
 
-func InitVietQR(options InitVietQROptions) *qrPay {
+func InitVietQR(options InitVietQROptions) *Pay {
 	qr := NewQRPay("")
 
 	if options.Amount != "" {

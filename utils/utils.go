@@ -2,22 +2,14 @@ package utils
 
 import "unicode/utf8"
 
-func ToPointer[T any](t T) *T {
-	return &t
-}
+// StrPtr returns &s.
+func StrPtr(s string) *string { return &s }
 
-// Utility functions
-func strPtr(s string) *string {
-	return &s
-}
+// IntPtr returns &i.
+func IntPtr(i int) *int { return &i }
 
-func intPtr(i int) *int {
-	return &i
-}
-
-func boolPtr(b bool) *bool {
-	return &b
-}
+// BoolPtr returns &b.
+func BoolPtr(b bool) *bool { return &b }
 
 func StringToUint8Array(content string) []byte {
 	var octets []byte

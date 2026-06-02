@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"qrpay/constants"
+	"github.com/khanhuyy/emvqr/constants"
 )
 
 type QRPay interface {
@@ -25,7 +25,8 @@ type QRPay interface {
 	genFieldData(id string, value string) string
 }
 
-type qrPay struct {
+// Pay is the low-level Vietnam QR container. Most callers want bankqr instead.
+type Pay struct {
 	IsValid          bool
 	Version          string
 	InitMethod       string
@@ -48,13 +49,13 @@ type qrPay struct {
 	Unreserved map[string]string
 }
 
-func (qr *qrPay) InitVNPayQR() {
+func (qr *Pay) InitVNPayQR() {
 	//TODO implement me
 	panic("implement me")
 }
 
-func NewQRPay(content string) *qrPay {
-	qr := &qrPay{
+func NewQRPay(content string) *Pay {
+	qr := &Pay{
 		IsValid:        true,
 		Provider:       constants.Provider{},
 		Consumer:       constants.Consumer{},
@@ -67,7 +68,11 @@ func NewQRPay(content string) *qrPay {
 	return qr
 }
 
-func (qr *qrPay) Parse(content string) {
+func (qr *Pay) Parse(content string) {
+	// Empty = fresh build mode.
+	if content == "" {
+		return
+	}
 	if len(content) < 4 {
 		qr.invalid()
 		return
@@ -79,7 +84,7 @@ func (qr *qrPay) Parse(content string) {
 	qr.parseRootContent(content)
 }
 
-func (qr *qrPay) Build() string {
+func (qr *Pay) Build() string {
 	version := qr.genFieldData(constants.FieldIDVersion.String(), defaultStr(qr.Version, "01"))
 	initMethod := qr.genFieldData(constants.FieldIDInitMethod.String(), defaultStr(qr.InitMethod, "11"))
 
@@ -87,10 +92,10 @@ func (qr *qrPay) Build() string {
 
 	var providerDataContent string
 	switch qr.Provider.GUID {
-	case constants.QRProviderVIETQR.String():
+	case constants.QRProviderGUIDVIETQR.String():
 		providerDataContent = qr.genFieldData(constants.VietQRConsumerFieldIDBankBin.String(), qr.Consumer.BankBin) +
 			qr.genFieldData(constants.VietQRConsumerFieldIDBankNumber.String(), qr.Consumer.BankNumber)
-	case constants.QRProviderVNPAY.String():
+	case constants.QRProviderGUIDVNPAY.String():
 		providerDataContent = qr.Merchant.Id
 	default:
 		providerDataContent = qr.Provider.Data
@@ -98,7 +103,18 @@ func (qr *qrPay) Build() string {
 
 	provider := qr.genFieldData(constants.ProviderFieldIDData.String(), providerDataContent)
 	service := qr.genFieldData(constants.ProviderFieldIDService.String(), qr.Provider.Service)
-	providerData := qr.genFieldData(qr.Provider.FieldId, guid+provider+service)
+
+	// Default field id from GUID.
+	fieldId := qr.Provider.FieldId
+	if fieldId == "" {
+		switch qr.Provider.GUID {
+		case constants.QRProviderGUIDVIETQR.String():
+			fieldId = constants.FieldIDVIETQR.String()
+		case constants.QRProviderGUIDVNPAY.String():
+			fieldId = constants.FieldIDVNPAYQR.String()
+		}
+	}
+	providerData := qr.genFieldData(fieldId, guid+provider+service)
 
 	category := qr.genFieldData(constants.FieldIDCategory.String(), qr.Category)
 	currency := qr.genFieldData(constants.FieldIDCurrency.String(), defaultStr(qr.Currency, "704"))
@@ -144,29 +160,29 @@ func defaultStr(s, def string) string {
 	return s
 }
 
-func (qr *qrPay) InitVietQR() {
+func (qr *Pay) InitVietQR() {
 
 }
 
-//func (qr *qrPay) InitVNPayQR() QRPay {
+//func (qr *Pay) InitVNPayQR() QRPay {
 //	return qr
 //}
 
-func (qr *qrPay) SetEVMCoField(id, value string) {
+func (qr *Pay) SetEVMCoField(id, value string) {
 	if qr.Unreserved == nil {
 		qr.Unreserved = make(map[string]string)
 	}
 	qr.Unreserved[id] = value
 }
 
-func (qr *qrPay) SetUnreservedField(id, value string) {
+func (qr *Pay) SetUnreservedField(id, value string) {
 	if qr.Unreserved == nil {
 		qr.Unreserved = make(map[string]string)
 	}
 	qr.Unreserved[id] = value
 }
 
-func (qr *qrPay) parseRootContent(content string) {
+func (qr *Pay) parseRootContent(content string) {
 	id, length, value, nextValue := qr.sliceContent(content)
 	if len(value) != length {
 		return
@@ -178,6 +194,7 @@ func (qr *qrPay) parseRootContent(content string) {
 		qr.InitMethod = value
 	case constants.FieldIDVIETQR.String(), constants.FieldIDVNPAYQR.String():
 		qr.Provider.FieldId = id
+		qr.parseProviderInfo(value)
 	case constants.FieldIDCategory.String():
 		qr.Category = value
 	case constants.FieldIDCurrency.String():
@@ -222,28 +239,36 @@ func (qr *qrPay) parseRootContent(content string) {
 	}
 }
 
-func (qr *qrPay) parseProviderInfo(content string) {
+func (qr *Pay) parseProviderInfo(content string) {
 	id, _, value, nextValue := qr.sliceContent(content)
 	switch id {
 	case constants.ProviderFieldIDGUID.String():
 		qr.Provider.GUID = value
-	case constants.ProviderFieldIDData.String():
-		if qr.Provider.Name == constants.QRProviderVNPAY {
-			qr.Provider.Name = constants.QRProviderVNPAY
-			qr.Merchant.Id = value
-		} else if qr.Provider.Name == constants.QRProviderVIETQR {
+		// Resolve Name from AID.
+		switch value {
+		case constants.QRProviderGUIDVIETQR.String():
 			qr.Provider.Name = constants.QRProviderVIETQR
+		case constants.QRProviderGUIDVNPAY.String():
+			qr.Provider.Name = constants.QRProviderVNPAY
+		}
+	case constants.ProviderFieldIDData.String():
+		switch qr.Provider.Name {
+		case constants.QRProviderVNPAY:
+			qr.Merchant.Id = value
+		case constants.QRProviderVIETQR:
 			qr.parseVietQRConsumer(value)
+		default:
+			qr.Provider.Data = value
 		}
 	case constants.ProviderFieldIDService.String():
 		qr.Provider.Service = value
 	}
-	if len(nextValue) > 4 {
+	if len(nextValue) >= 4 {
 		qr.parseProviderInfo(nextValue)
 	}
 }
 
-func (qr *qrPay) parseVietQRConsumer(content string) {
+func (qr *Pay) parseVietQRConsumer(content string) {
 	id, _, value, nextValue := qr.sliceContent(content)
 	switch id {
 	case constants.VietQRConsumerFieldIDBankBin.String():
@@ -256,7 +281,7 @@ func (qr *qrPay) parseVietQRConsumer(content string) {
 	}
 }
 
-func (qr *qrPay) parseAdditionalData(content string) {
+func (qr *Pay) parseAdditionalData(content string) {
 	id, _, value, nextValue := qr.sliceContent(content)
 	switch id {
 	case constants.AdditionalDataIDBillNumber.String():
@@ -292,7 +317,7 @@ func sortedKeys(m map[string]string) []string {
 	return keys
 }
 
-func (qr *qrPay) verifyCRC(content string) bool {
+func (qr *Pay) verifyCRC(content string) bool {
 	if len(content) < 4 {
 		return false
 	}
@@ -302,13 +327,13 @@ func (qr *qrPay) verifyCRC(content string) bool {
 	return crcCode == genCRC
 }
 
-func (qr *qrPay) GenCRCCode(content string) string {
+func (qr *Pay) GenCRCCode(content string) string {
 	crc := CRC16CCITT(content)
 	return fmt.Sprintf("%04X", crc)
 }
 
-// sliceContent check tlv - tag length value
-func (qr *qrPay) sliceContent(content string) (id string, length int, value, nextValue string) {
+// sliceContent splits a TLV: tag, length, value, rest.
+func (qr *Pay) sliceContent(content string) (id string, length int, value, nextValue string) {
 	id = content[0:2]
 	lengthString := content[2:4]
 	length, _ = strconv.Atoi(lengthString)
@@ -317,11 +342,11 @@ func (qr *qrPay) sliceContent(content string) (id string, length int, value, nex
 	return id, length, value, nextValue
 }
 
-func (qr *qrPay) invalid() {
+func (qr *Pay) invalid() {
 	qr.IsValid = false
 }
 
-func (qr *qrPay) genFieldData(id, value string) string {
+func (qr *Pay) genFieldData(id, value string) string {
 	if len(id) != 2 || len(value) == 0 {
 		return ""
 	}

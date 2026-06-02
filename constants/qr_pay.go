@@ -101,15 +101,15 @@ func (v VietQRConsumerFieldID) String() string {
 type AdditionalDataID string
 
 const (
-	AdditionalDataIDBillNumber                    AdditionalDataID = "01" // sổ hóa đơn
-	AdditionalDataIDMobileNumber                  AdditionalDataID = "02" // số điện thoại
-	AdditionalDataIDStoreLabel                    AdditionalDataID = "03" // mã cửa hàng
-	AdditionalDataIDLoyaltyNumber                 AdditionalDataID = "04" // mã khách hàng thân thiết
-	AdditionalDataIDReferenceLabel                AdditionalDataID = "05" // mã tham chiếu
-	AdditionalDataIDCustomerLabel                 AdditionalDataID = "06" // mã khách hàng
-	AdditionalDataIDTerminalLabel                 AdditionalDataID = "07" // mã số điểm bán
-	AdditionalDataIDPurposeOfTransaction          AdditionalDataID = "08" // mục đích giao dịch
-	AdditionalDataIDAdditionalConsumerDataRequest AdditionalDataID = "09" // yêu cầ uduwx liệu khách hàng bổ sung
+	AdditionalDataIDBillNumber                    AdditionalDataID = "01" // bill number
+	AdditionalDataIDMobileNumber                  AdditionalDataID = "02" // mobile number
+	AdditionalDataIDStoreLabel                    AdditionalDataID = "03" // store label
+	AdditionalDataIDLoyaltyNumber                 AdditionalDataID = "04" // loyalty number
+	AdditionalDataIDReferenceLabel                AdditionalDataID = "05" // reference label
+	AdditionalDataIDCustomerLabel                 AdditionalDataID = "06" // customer label
+	AdditionalDataIDTerminalLabel                 AdditionalDataID = "07" // terminal label
+	AdditionalDataIDPurposeOfTransaction          AdditionalDataID = "08" // purpose of transaction
+	AdditionalDataIDAdditionalConsumerDataRequest AdditionalDataID = "09" // additional consumer data request
 )
 
 func (a AdditionalDataID) String() string {

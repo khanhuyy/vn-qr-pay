@@ -1,5 +1,5 @@
-module qrpay
+module github.com/khanhuyy/emvqr
 
-go 1.24.2
+go 1.13
 
-require github.com/howeyc/crc16 v0.0.0-20171223171357-2b2a61e366a6
+require github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
